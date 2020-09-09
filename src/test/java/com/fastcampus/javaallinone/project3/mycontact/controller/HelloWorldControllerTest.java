@@ -19,13 +19,14 @@ class HelloWorldControllerTest {
     private MockMvc mockMvc;
 
     @Test
-    void helloWorld(){
+    void helloWorld() {
 //        System.out.println("test");
         System.out.println(helloWorldController.helloWorld());
 
         assertThat(helloWorldController.helloWorld()).isEqualTo("HelloWorld");
 
     }
+
     @Test
     void mockMvcTest() throws Exception {
         mockMvc = MockMvcBuilders.standaloneSetup(helloWorldController).build();
@@ -33,7 +34,7 @@ class HelloWorldControllerTest {
         mockMvc.perform(
                 MockMvcRequestBuilders.get("/api/helloWorld")
         ).andDo(MockMvcResultHandlers.print())
-        .andExpect(MockMvcResultMatchers.status().isOk())
-        .andExpect(MockMvcResultMatchers.content().string("HelloWorld"));
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.content().string("HelloWorld"));
     }
 }

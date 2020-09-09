@@ -67,7 +67,7 @@ class PersonServiceTest {
     void put() {
         personService.put(mockPersonDto());
 
-        verify(personRepository, times(1)).save(any(Person.class));
+        verify(personRepository, times(1)).save(argThat(new IsPersonWillBeInserted()));
     }
 
     @Test
@@ -100,23 +100,95 @@ class PersonServiceTest {
 
     }
 
+    @Test
+    void modifyByNameIfPersonNotFound() {
+        when(personRepository.findById(1L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> personService.modify(1L, "daniel"));
+    }
+
+    @Test
+    void modifyByName() {
+        when(personRepository.findById(1L))
+                .thenReturn(Optional.of(new Person("dosang")));
+
+        personService.modify(1L, "daniel");
+
+        verify(personRepository, times(1)).save(argThat(new IsNameWillBeUpdated()));
+    }
+
+    @Test
+    void deleteIfPersonNotFound(){
+        when(personRepository.findById(1L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> personService.delete(1L));
+    }
+
+    @Test
+    void delete(){
+        when(personRepository.findById(1L))
+                .thenReturn(Optional.of(new Person("dosang")));
+
+        personService.delete(1L);
+
+        verify(personRepository, times(1)).save(argThat(new IsPersonWillBeDeleted()));
+    }
+
     private PersonDto mockPersonDto() {
         return PersonDto.of("dosang", "programming", "강동", LocalDate.now(), "programmer", "010-0000-1111");
     }
 
-    private static class IsPersonWillBeUpdated implements ArgumentMatcher<Person> {
+    private static class IsPersonWillBeInserted implements ArgumentMatcher<Person> {
 
         @Override
         public boolean matches(Person person) {
-            return equals(person.getName(),"dosang")
+            return equals(person.getName(), "dosang")
                     && equals(person.getHobby(), "programming")
                     && equals(person.getAddress(), "강동")
                     && equals(person.getBirthday(), Birthday.of(LocalDate.now()))
                     && equals(person.getJob(), "programmer")
                     && equals(person.getPhoneNumber(), "010-0000-1111");
         }
-        private boolean equals(Object actual, Object expected){
+        private boolean equals(Object actual, Object expected) {
             return expected.equals(actual);
         }
     }
+
+    private static class IsPersonWillBeUpdated implements ArgumentMatcher<Person> {
+
+        @Override
+        public boolean matches(Person person) {
+            return equals(person.getName(), "dosang")
+                    && equals(person.getHobby(), "programming")
+                    && equals(person.getAddress(), "강동")
+                    && equals(person.getBirthday(), Birthday.of(LocalDate.now()))
+                    && equals(person.getJob(), "programmer")
+                    && equals(person.getPhoneNumber(), "010-0000-1111");
+        }
+
+        private boolean equals(Object actual, Object expected) {
+            return expected.equals(actual);
+        }
+    }
+
+    private static class IsNameWillBeUpdated implements ArgumentMatcher<Person> {
+
+        @Override
+        public boolean matches(Person person) {
+            return person.getName().equals("daniel");
+        }
+
+    }
+
+    private static class IsPersonWillBeDeleted implements ArgumentMatcher<Person> {
+
+        @Override
+        public boolean matches(Person person) {
+            return person.isDeleted();
+        }
+
+    }
+
 }

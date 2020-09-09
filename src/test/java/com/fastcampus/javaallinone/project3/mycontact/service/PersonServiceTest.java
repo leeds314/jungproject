@@ -2,10 +2,12 @@ package com.fastcampus.javaallinone.project3.mycontact.service;
 
 import com.fastcampus.javaallinone.project3.mycontact.controller.dto.PersonDto;
 import com.fastcampus.javaallinone.project3.mycontact.domain.Person;
+import com.fastcampus.javaallinone.project3.mycontact.domain.dto.Birthday;
 import com.fastcampus.javaallinone.project3.mycontact.repository.PersonRepository;
 import org.assertj.core.util.Lists;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatcher;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -17,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -51,7 +54,7 @@ class PersonServiceTest {
     }
 
     @Test
-    void getPersonIfNotFound(){
+    void getPersonIfNotFound() {
         when(personRepository.findById(1L))
                 .thenReturn(Optional.empty());
 
@@ -61,11 +64,59 @@ class PersonServiceTest {
     }
 
     @Test
-    void put(){
-        PersonDto dto = PersonDto.of("dosang", "programming", "강동", LocalDate.now(), "programmer", "010-0000-1111");
-
-        personService.put(dto);
+    void put() {
+        personService.put(mockPersonDto());
 
         verify(personRepository, times(1)).save(any(Person.class));
+    }
+
+    @Test
+    void modifyIfPersonNotFound() {
+        when(personRepository.findById(1L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> personService.modify(1L, mockPersonDto()));
+    }
+
+    @Test
+    void modifyIfNameIsDiffernt() {
+
+        when(personRepository.findById(1L))
+                .thenReturn(Optional.of(new Person("tonny")));
+
+        assertThrows(RuntimeException.class, () -> personService.modify(1L, mockPersonDto()));
+
+    }
+
+    @Test
+    void modify() {
+
+        when(personRepository.findById(1L))
+                .thenReturn(Optional.of(new Person("dosang")));
+
+        personService.modify(1L, mockPersonDto());
+
+        verify(personRepository, times(1)).save(argThat(new IsPersonWillBeUpdated()));
+
+    }
+
+    private PersonDto mockPersonDto() {
+        return PersonDto.of("dosang", "programming", "강동", LocalDate.now(), "programmer", "010-0000-1111");
+    }
+
+    private static class IsPersonWillBeUpdated implements ArgumentMatcher<Person> {
+
+        @Override
+        public boolean matches(Person person) {
+            return equals(person.getName(),"dosang")
+                    && equals(person.getHobby(), "programming")
+                    && equals(person.getAddress(), "강동")
+                    && equals(person.getBirthday(), Birthday.of(LocalDate.now()))
+                    && equals(person.getJob(), "programmer")
+                    && equals(person.getPhoneNumber(), "010-0000-1111");
+        }
+        private boolean equals(Object actual, Object expected){
+            return expected.equals(actual);
+        }
     }
 }
